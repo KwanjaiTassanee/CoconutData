@@ -83,6 +83,9 @@
     #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2a24;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90vw}
     #toast.show{opacity:1} #toast.err{background:var(--danger)}
     .loading{position:fixed;inset:0;background:rgba(244,247,242,.55);display:flex;align-items:center;justify-content:center;z-index:40}
+    .api-error{background:#fdecea;border:1px solid #f5c2bd;color:#7a1f16;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:14px;line-height:1.7}
+    .demo-banner{background:#fff6e0;border:1px solid #f1d48a;color:#6b4e00;border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:14px;line-height:1.8}
+    .api-error a{color:#7a1f16;font-weight:600}
     .hidden{display:none}
     .spinner{width:42px;height:42px;border:4px solid #cfe3d6;border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -108,6 +111,8 @@
 </header>
 
 <main>
+  <div id="demo-banner" class="demo-banner hidden"></div>
+  <div id="api-error" class="api-error hidden"></div>
   <!-- ===== รายวัน ===== -->
   <section id="tab-daily" class="tab active">
     <div class="card filters">
@@ -197,6 +202,7 @@
 <div id="loading" class="loading hidden"><div class="spinner"></div></div>
 
 <script src="config.js"></script>
+<script src="mock.js"></script>
 <script>
   const S = { init: null, daily: null, history: null, charts: {}, loading: 0, historyLoaded: false };
   const TYPE_COLORS = ['#2f8f5b', '#9a6232'];
@@ -208,11 +214,28 @@
 
   /* ---------- utils ---------- */
   const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || '';
+  // โหมดข้อมูลตัวอย่าง: config.js DEMO_MODE:true หรือ ?demo=1 (ปิดด้วย ?demo=0)
+  const DEMO = (function () {
+    const q = new URLSearchParams(location.search).get('demo');
+    try {
+      if (q === '1') localStorage.setItem('coconut_demo', '1');
+      if (q === '0') localStorage.removeItem('coconut_demo');
+      if (q === null && localStorage.getItem('coconut_demo') === '1') return true;
+    } catch (e) { }
+    if (q === '1') return true;
+    if (q === '0') return false;
+    return !!(window.APP_CONFIG && window.APP_CONFIG.DEMO_MODE);
+  })();
+  function setDemo(on) {
+    try { on ? localStorage.setItem('coconut_demo', '1') : localStorage.removeItem('coconut_demo'); } catch (e) { }
+    location.href = location.pathname + '?demo=' + (on ? '1' : '0');
+  }
   const WRITE_ACTIONS = ['saveRecords', 'deleteRecord'];
   function getPin() { try { return localStorage.getItem('coconut_pin') || ''; } catch (e) { return ''; } }
   function setPin(v) { try { localStorage.setItem('coconut_pin', v || ''); } catch (e) { } }
 
   async function run(fn, ...args) {
+    if (DEMO) return window.MockApi.call(fn, args);
     if (!API_URL) throw new Error('ยังไม่ได้ตั้งค่า API_URL ในไฟล์ config.js');
     const body = { action: fn, args };
     if (WRITE_ACTIONS.includes(fn)) {
@@ -223,11 +246,16 @@
       body.pin = pin;
     }
     // ใช้ text/plain เพื่อไม่ให้เบราว์เซอร์ส่ง preflight (Apps Script ไม่รองรับ OPTIONS)
-    const res = await fetch(API_URL, {
-      method: 'POST', redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    });
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(body)
+      });
+    } catch (e) {
+      throw new Error('ติดต่อ Apps Script ไม่ได้ — มักเกิดจากยังไม่ได้วาง Code.gs เวอร์ชัน API หรือยังไม่ได้ Deploy เวอร์ชันใหม่ (สิทธิ์: ทุกคน)');
+    }
     if (!res.ok) throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ (HTTP ' + res.status + ')');
     let json;
     try { json = await res.json(); }
@@ -304,29 +332,77 @@
   }
 
   /* ---------- init ---------- */
+  // ค่าเริ่มต้นในหน้าเว็บ ใช้เมื่อเชื่อมต่อ Apps Script ไม่ได้ (ให้ dropdown และฟอร์มยังแสดงได้)
+  const DEFAULT_INIT = {
+    districts: ['เมืองสงขลา', 'สทิงพระ', 'จะนะ', 'นาทวี', 'เทพา', 'สะบ้าย้อย', 'ระโนด', 'กระแสสินธุ์',
+      'รัตภูมิ', 'สะเดา', 'หาดใหญ่', 'นาหม่อม', 'ควนเนียง', 'บางกล่ำ', 'สิงหนคร', 'คลองหอยโข่ง'],
+    types: [
+      { name: 'มะพร้าวน้ำหอม', priceUnit: 'บาท/ผล', qtyUnit: 'ผล' },
+      { name: 'มะพร้าวแก่', priceUnit: 'บาท/ผล', qtyUnit: 'ผล' }
+    ],
+    grades: [
+      { code: 'A', label: 'เกรด A (ผลใหญ่)' },
+      { code: 'B', label: 'เกรด B (ผลกลาง)' },
+      { code: 'C', label: 'เกรด C (ผลเล็ก/ตกเกรด)' }
+    ],
+    today: new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10),  // เวลาไทย
+    writeProtected: false, sheetUrl: ''
+  };
+
+  function showApiError(msg) {
+    const el = $('api-error');
+    el.innerHTML = `<b>⚠️ เชื่อมต่อ Google Apps Script ไม่สำเร็จ</b> — ${esc(msg)}<br>
+      ตรวจสอบ: (1) วาง Code.gs เวอร์ชันใหม่แล้ว (2) Deploy เป็น <b>เวอร์ชันใหม่</b> (3) ผู้ที่มีสิทธิ์เข้าถึง = <b>ทุกคน</b>
+      (4) เปิด <a href="${esc(API_URL)}" target="_blank" rel="noopener">ลิงก์ API</a> แล้วต้องเห็นข้อความ "API พร้อมใช้งาน"
+      <button class="btn small" onclick="location.reload()">ลองใหม่</button>
+      <button class="btn small" onclick="setDemo(true)">👀 ดูด้วยข้อมูลตัวอย่าง</button>`;
+    el.classList.remove('hidden');
+  }
+
+  function applyInit() {
+    const I = S.init;
+    const names = I.districts, types = I.types.map(t => t.name);
+    fillSelect($('d-district'), names, true);
+    fillSelect($('h-district'), names, true);
+    fillSelect($('f-district'), names, false);
+    fillSelect($('d-type'), types, true);
+    fillSelect($('h-type'), types, true);
+    $('d-date').value = I.today;
+    $('f-date').value = I.today;
+    $('h-end').value = I.today;
+    $('h-start').value = addDays(I.today, -29);
+    $('f-pin-wrap').classList.toggle('hidden', !I.writeProtected);
+    if (I.writeProtected) $('f-pin').value = getPin();
+    if (I.sheetUrl) { $('sheet-link').href = I.sheetUrl; $('sheet-link').classList.remove('hidden'); }
+    buildForm();
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
+    try { $('f-recorder').value = localStorage.getItem('coconut_recorder') || ''; } catch (e) { }
+    $('f-recorder').addEventListener('change', () => { try { localStorage.setItem('coconut_recorder', $('f-recorder').value); } catch (e) { } });
+
+    if (DEMO) {
+      $('demo-banner').innerHTML = `🧪 <b>โหมดข้อมูลตัวอย่าง</b> — ตัวเลขทั้งหมดเป็นข้อมูลจำลอง การบันทึก/ลบจะเก็บในเบราว์เซอร์นี้เท่านั้น ไม่ลง Google Sheet
+        <button class="btn small" onclick="MockApi.reset();location.reload()">รีเซ็ตข้อมูลตัวอย่าง</button>
+        <button class="btn small" onclick="setDemo(false)">ใช้ข้อมูลจริง</button>`;
+      $('demo-banner').classList.remove('hidden');
+    }
+
+    // แสดง dropdown/ฟอร์มทันทีด้วยค่าเริ่มต้น แล้วค่อยอัปเดตจากเซิร์ฟเวอร์
+    S.init = DEFAULT_INIT;
+    applyInit();
+    bindEvents();
+
     busy(true);
     try {
-      S.init = await run('getInitData');
-      if (S.init.writeProtected) { $('f-pin-wrap').classList.remove('hidden'); $('f-pin').value = getPin(); }
-      try { $('f-recorder').value = localStorage.getItem('coconut_recorder') || ''; } catch (e) { }
-      $('f-recorder').addEventListener('change', () => { try { localStorage.setItem('coconut_recorder', $('f-recorder').value); } catch (e) { } });
-      if (S.init.sheetUrl) { $('sheet-link').href = S.init.sheetUrl; $('sheet-link').classList.remove('hidden'); }
-      const names = S.init.districts, types = S.init.types.map(t => t.name);
-      fillSelect($('d-district'), names, true);
-      fillSelect($('h-district'), names, true);
-      fillSelect($('f-district'), names, false);
-      fillSelect($('d-type'), types, true);
-      fillSelect($('h-type'), types, true);
-      $('d-date').value = S.init.today;
-      $('f-date').value = S.init.today;
-      $('h-end').value = S.init.today;
-      $('h-start').value = addDays(S.init.today, -29);
-      buildForm();
-      bindEvents();
+      const server = await run('getInitData');
+      const keep = { district: $('f-district').value };
+      S.init = Object.assign({}, DEFAULT_INIT, server);
+      applyInit();
+      if (S.init.districts.includes(keep.district)) $('f-district').value = keep.district;
       await loadDaily();
     } catch (e) {
-      toast('เริ่มระบบไม่สำเร็จ: ' + (e.message || e), true);
+      showApiError(e.message || String(e));
     } finally { busy(false); }
   });
 
@@ -411,7 +487,7 @@
 
   function renderWeatherGrid(D, dist) {
     if (D.weatherError) $('d-wx-note').textContent = '⚠️ ' + D.weatherError;
-    else $('d-wx-note').textContent = 'ข้อมูลจาก Open-Meteo · คลิกการ์ดเพื่อกรองอำเภอ';
+    else $('d-wx-note').textContent = (DEMO ? 'ข้อมูลจำลอง' : 'ข้อมูลจาก Open-Meteo') + ' · คลิกการ์ดเพื่อกรองอำเภอ';
     const map = {}; D.weather.forEach(w => map[w.district] = w);
     $('d-wx').innerHTML = S.init.districts.map(n => {
       const w = map[n];
