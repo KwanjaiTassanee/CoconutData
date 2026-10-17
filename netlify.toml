@@ -1,0 +1,17 @@
+# เว็บไฟล์ล้วน ไม่ต้อง build
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# ให้ config.js อัปเดตทันทีเมื่อเปลี่ยน API_URL
+[[headers]]
+  for = "/config.js"
+  [headers.values]
+    Cache-Control = "no-cache"

@@ -1,127 +1,702 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Songkhla Coconut Dashboard & Data Collector</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Google Fonts Prompt -->
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard มะพร้าว จ.สงขลา</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥥</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    body { font-family: 'Prompt', sans-serif; }
+    :root{
+      --bg:#f4f7f2; --card:#fff; --ink:#1f2a24; --muted:#6b7a70; --line:#e3e9e1;
+      --green:#2f8f5b; --green-d:#1f6b42; --brown:#9a6232; --sky:#3b82c4; --danger:#c0392b; --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'IBM Plex Sans Thai',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+    .topbar{background:linear-gradient(120deg,#1a5c38,#2f8f5b);color:#fff;padding:16px 20px 0;position:sticky;top:0;z-index:10}
+    .topbar-in{max-width:1280px;margin:0 auto}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand .logo{font-size:34px}
+    h1{margin:0;font-size:20px;font-weight:700}
+    .brand p{margin:2px 0 0;opacity:.85;font-size:13px}
+    .sheet-link{margin-left:auto;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:7px 12px;border:1px solid rgba(255,255,255,.5);border-radius:9px;white-space:nowrap}
+    .sheet-link:hover{background:rgba(255,255,255,.15)}
+    .tabs{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+    .tabs button{background:transparent;border:0;color:#d8eadf;padding:10px 16px;font:inherit;font-weight:500;border-radius:10px 10px 0 0;cursor:pointer;white-space:nowrap}
+    .tabs button.active{background:var(--bg);color:var(--green-d);font-weight:600}
+    main{max-width:1280px;margin:0 auto;padding:16px}
+    .tab{display:none}.tab.active{display:block}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+    .card h2{font-size:16px;margin:0 0 12px}
+    .card-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+    .muted{color:var(--muted);font-size:13px}
+    .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+    .filters label,.field{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+    input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);min-width:0}
+    input:focus,select:focus,textarea:focus{outline:2px solid rgba(47,143,91,.35);border-color:var(--green)}
+    .btn{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+    .btn:hover{border-color:var(--green)}
+    .btn.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+    .btn.primary:hover{background:var(--green-d)}
+    .btn.small{padding:4px 10px;font-size:13px}
+    .btn.danger{color:var(--danger)}
+    .date-label{font-weight:600;color:var(--green-d);font-size:15px;margin:2px 0 12px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+    .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;border-left:5px solid var(--green)}
+    .kpi.brown{border-left-color:var(--brown)} .kpi.sky{border-left-color:var(--sky)}
+    .kpi-t{font-size:13px;color:var(--muted)}
+    .kpi-v{font-size:26px;font-weight:700;margin:4px 0}
+    .kpi-v small{font-size:13px;font-weight:500;color:var(--muted)}
+    .kpi-s{font-size:12.5px;color:var(--muted);line-height:1.5}
+    .up{color:#1a8f4a;font-weight:600} .down{color:var(--danger);font-weight:600}
+    .wx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+    .wx{border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;background:#fbfdfb;transition:.15s}
+    .wx:hover{border-color:var(--green)}
+    .wx.sel{border-color:var(--green);background:#eaf6ee;box-shadow:0 0 0 2px rgba(47,143,91,.2)}
+    .wx .n{font-weight:600;font-size:14px}
+    .wx .i{font-size:28px;line-height:1.25}
+    .wx .t{font-size:13px} .wx .m{font-size:12px;color:var(--muted)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+    .chart-box{position:relative;height:300px}
+    .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+    th{background:#f6f9f5;font-weight:600;font-size:13px;position:sticky;top:0;z-index:1}
+    td.num,th.num{text-align:right}
+    tr.click{cursor:pointer} tr.click:hover{background:#f3faf5}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+    .badge.t0{background:#e3f4ea;color:var(--green-d)} .badge.t1{background:#f5e9dc;color:#7a4a20}
+    .g{display:inline-block;min-width:24px;text-align:center;border-radius:6px;font-weight:700;font-size:12px;padding:2px 4px;background:#eef1ec}
+    .entry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    @media(max-width:860px){.type-grid{grid-template-columns:1fr}}
+    .type-block{border:1px solid var(--line);border-radius:12px;padding:12px}
+    .type-block h3{margin:0 0 8px;font-size:15px}
+    .type-block td{padding:6px 4px;border:0}
+    .type-block input{width:100%}
+    .form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+    .check{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)}
+    .hint{background:#f3f8f2;border:1px dashed #cfe3d6;border-radius:10px;padding:8px 12px;font-size:13px;color:var(--muted);margin-top:10px}
+    .empty{padding:24px;text-align:center;color:var(--muted)}
+    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2a24;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90vw}
+    #toast.show{opacity:1} #toast.err{background:var(--danger)}
+    .loading{position:fixed;inset:0;background:rgba(244,247,242,.55);display:flex;align-items:center;justify-content:center;z-index:40}
+    .hidden{display:none}
+    .spinner{width:42px;height:42px;border:4px solid #cfe3d6;border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
-
-  <!-- Header Header Navbar -->
-  <header class="bg-emerald-800 text-white shadow-lg sticky top-0 z-50">
-    <div class="max-w-7xl mx-mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <i class="fa-solid fa-tree text-emerald-300 text-3xl"></i>
-        <div>
-          <h1 class="text-2xl font-bold tracking-wide">ระบบติดตามและบันทึกข้อมูลมะพร้าว จ.สงขลา</h1>
-          <p class="text-xs text-emerald-200">Songkhla Coconut Yield, Price & Quality Analytics</p>
-        </div>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="logo">🥥</div>
+      <div>
+        <h1>Dashboard มะพร้าว จังหวัดสงขลา</h1>
+        <p>ราคา · ผลผลิต · เกรด · สภาพอากาศ มะพร้าวน้ำหอมและมะพร้าวแก่ รายอำเภอ</p>
       </div>
-      <div class="flex items-center gap-2 bg-emerald-900/60 p-2 rounded-lg border border-emerald-700 w-full md:w-auto">
-        <i class="fa-solid fa-link text-emerald-400"></i>
-        <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/AKfycbyTJkzqAwO9gYnry3jUwDGBAUirKcfb3eGDbBQrS2jKoqqYxplhQVlLFkie9CkkiJmCmw/exec" 
-               class="bg-slate-800 text-xs text-emerald-100 px-3 py-1.5 rounded w-full md:w-80 border border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-400">
-        <button onclick="saveApiUrl()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap transition">
-          บันทึก URL
-        </button>
-      </div>
+      <a id="sheet-link" class="sheet-link hidden" target="_blank" rel="noopener">📄 เปิด Google Sheet</a>
     </div>
-  </header>
+    <nav class="tabs">
+      <button data-tab="daily" class="active">📅 ภาพรวมรายวัน</button>
+      <button data-tab="history">📈 ข้อมูลย้อนหลัง</button>
+      <button data-tab="entry">✍️ บันทึกข้อมูล</button>
+    </nav>
+  </div>
+</header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+<main>
+  <!-- ===== รายวัน ===== -->
+  <section id="tab-daily" class="tab active">
+    <div class="card filters">
+      <label>วันที่ <input type="date" id="d-date"></label>
+      <button class="btn" id="d-prev" title="วันก่อนหน้า">◀</button>
+      <button class="btn" id="d-next" title="วันถัดไป">▶</button>
+      <button class="btn" id="d-today">วันนี้</button>
+      <label>อำเภอ <select id="d-district"><option value="">ทุกอำเภอ</option></select></label>
+      <label>ประเภท <select id="d-type"><option value="">ทุกประเภท</option></select></label>
+      <button class="btn primary" id="d-reload">🔄 รีเฟรช</button>
+    </div>
+    <div class="date-label" id="d-label"></div>
+    <div class="kpis" id="d-kpis"></div>
 
-    <!-- Section 1: สภาพอากาศ & สรุปภาพรวม -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- Card สภาพอากาศ -->
-      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 rounded-2xl shadow-md md:col-span-1 flex flex-col justify-between">
-        <div>
-          <div class="flex justify-between items-start">
-            <span class="text-xs font-medium bg-blue-500/40 px-2 py-1 rounded-full text-blue-100">สภาพอากาศวันนี้</span>
-            <i class="fa-solid fa-cloud-sun-rain text-2xl text-amber-300"></i>
-          </div>
-          <h3 class="text-lg font-bold mt-2">อ.เมืองสงขลา</h3>
-          <div class="flex items-baseline gap-2 mt-1">
-            <span id="weatherTemp" class="text-4xl font-extrabold">30°C</span>
-            <span id="weatherDesc" class="text-sm text-blue-100">มีฝนเล็กน้อยบางพื้นที่</span>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-blue-400/40 text-xs">
-          <div><i class="fa-solid fa-droplet text-blue-200 mr-1"></i> ความชื้น: <span id="weatherHumidity">78%</span></div>
-          <div><i class="fa-solid fa-wind text-blue-200 mr-1"></i> ลม: <span id="weatherWind">12 กม./ชม.</span></div>
-        </div>
-      </div>
-
-      <!-- KPI Summary Cards -->
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div class="flex justify-between items-center text-slate-500 text-sm font-medium">
-          <span>ราคามะพร้าวน้ำหอมเฉลี่ย</span>
-          <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-            <i class="fa-solid fa-wine-glass-pad"></i>
-          </div>
-        </div>
-        <div class="my-2">
-          <span id="avgAromaticPrice" class="text-3xl font-bold text-slate-800">0.00</span>
-          <span class="text-slate-500 text-sm ml-1">บาท/ผล</span>
-        </div>
-        <div class="text-xs text-emerald-600 font-medium">
-          <i class="fa-solid fa-arrows-up-down mr-1"></i>อัปเดตตามตัวกรองปัจจุบัน
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div class="flex justify-between items-center text-slate-500 text-sm font-medium">
-          <span>ราคามะพร้าวแก่เฉลี่ย</span>
-          <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
-            <i class="fa-solid fa-cookie-bite"></i>
-          </div>
-        </div>
-        <div class="my-2">
-          <span id="avgMaturePrice" class="text-3xl font-bold text-slate-800">0.00</span>
-          <span class="text-slate-500 text-sm ml-1">บาท/ผล</span>
-        </div>
-        <div class="text-xs text-amber-600 font-medium">
-          <i class="fa-solid fa-arrows-up-down mr-1"></i>อัปเดตตามตัวกรองปัจจุบัน
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-        <div class="flex justify-between items-center text-slate-500 text-sm font-medium">
-          <span>ปริมาณผลผลิตรวม</span>
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-            <i class="fa-solid fa-boxes-stacked"></i>
-          </div>
-        </div>
-        <div class="my-2">
-          <span id="totalYield" class="text-3xl font-bold text-slate-800">0</span>
-          <span class="text-slate-500 text-sm ml-1">ผล</span>
-        </div>
-        <div class="text-xs text-blue-600 font-medium">
-          <i class="fa-solid fa-database mr-1"></i>รวมรายการบันทึกทั้งหมด
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-h"><h2>🌦️ สภาพอากาศรายอำเภอ</h2><span class="muted" id="d-wx-note">คลิกการ์ดเพื่อกรองอำเภอ</span></div>
+      <div class="wx-grid" id="d-wx"></div>
     </div>
 
-    <!-- Section 2: ฟอร์มบันทึกข้อมูล & กราฟ -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- Form บันทึกข้อมูล (4 cols) -->
-      <div class="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square text-emerald-600"></i>
-          บันทึกข้อมูลผลผลิตรายวัน
-        </h2>
-        <form id="coconutForm" onsubmit="submitData(event)" class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">วันที่บันทึก</label>
-            <input type="date" id="inputDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring
+    <div class="grid2">
+      <div class="card"><h2>ราคาเฉลี่ยรายอำเภอ (บาท/ผล)</h2><div class="chart-box"><canvas id="c-district"></canvas></div></div>
+      <div class="card"><h2>ราคาและผลผลิตตามเกรด</h2><div class="chart-box"><canvas id="c-grade"></canvas></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>รายการข้อมูลของวัน</h2><span class="muted" id="d-count"></span></div>
+      <div class="table-wrap"><table id="d-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== ย้อนหลัง ===== -->
+  <section id="tab-history" class="tab">
+    <div class="card filters">
+      <label>ตั้งแต่ <input type="date" id="h-start"></label>
+      <label>ถึง <input type="date" id="h-end"></label>
+      <div class="quick">
+        <button class="btn small" data-range="7">7 วัน</button>
+        <button class="btn small" data-range="30">30 วัน</button>
+        <button class="btn small" data-range="90">90 วัน</button>
+      </div>
+      <label>อำเภอ <select id="h-district"><option value="">ทุกอำเภอ</option></select></label>
+      <label>ประเภท <select id="h-type"><option value="">ทุกประเภท</option></select></label>
+      <button class="btn primary" id="h-load">แสดงผล</button>
+      <button class="btn" id="h-csv">⬇️ CSV</button>
+    </div>
+    <div class="date-label" id="h-label"></div>
+    <div class="kpis" id="h-kpis"></div>
+
+    <div class="card"><h2>แนวโน้มราคาเฉลี่ยรายวัน (บาท/ผล)</h2><div class="chart-box"><canvas id="c-trend"></canvas></div></div>
+    <div class="grid2">
+      <div class="card"><h2>ผลผลิตรายวัน (ผล)</h2><div class="chart-box"><canvas id="c-qty"></canvas></div></div>
+      <div class="card"><h2>สภาพอากาศรายวัน</h2><div class="chart-box"><canvas id="c-wx"></canvas></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>สรุปรายอำเภอในช่วงนี้</h2><div class="table-wrap"><table id="h-dist"></table></div></div>
+      <div class="card"><h2>สรุปรายเกรด</h2><div class="table-wrap"><table id="h-grade"></table></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>ข้อมูลรายวัน</h2><span class="muted">คลิกแถวเพื่อดูรายละเอียดวันนั้น</span></div>
+      <div class="table-wrap"><table id="h-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== บันทึกข้อมูล ===== -->
+  <section id="tab-entry" class="tab">
+    <form class="card" id="f-form" autocomplete="off">
+      <h2>บันทึกราคาและผลผลิตมะพร้าว</h2>
+      <div class="entry-grid">
+        <label class="field">วันที่ <input type="date" id="f-date" required></label>
+        <label class="field">อำเภอ <select id="f-district" required></select></label>
+        <label class="field">ผู้บันทึก <input type="text" id="f-recorder" placeholder="ชื่อผู้บันทึก"></label>
+        <label class="field">หมายเหตุ <input type="text" id="f-note" placeholder="เช่น แหล่งที่มาราคา"></label>
+        <label class="field hidden" id="f-pin-wrap">รหัสผ่านบันทึก 🔒 <input type="password" id="f-pin" autocomplete="current-password" placeholder="ขอรหัสจากผู้ดูแล"></label>
+      </div>
+      <div class="type-grid" id="f-types"></div>
+      <div class="hint" id="f-hint">เว้นว่างเกรดที่ไม่มีข้อมูลได้ ระบบจะบันทึกเฉพาะแถวที่กรอก</div>
+      <div class="form-actions">
+        <label class="check"><input type="checkbox" id="f-replace" checked> แทนที่ข้อมูลเดิมของวัน/อำเภอ/เกรดเดียวกัน</label>
+        <button type="submit" class="btn primary">💾 บันทึกลง Google Sheet</button>
+        <button type="button" class="btn" id="f-clear">ล้างฟอร์ม</button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<div id="toast"></div>
+<div id="loading" class="loading hidden"><div class="spinner"></div></div>
+
+<script src="config.js"></script>
+<script>
+  const S = { init: null, daily: null, history: null, charts: {}, loading: 0, historyLoaded: false };
+  const TYPE_COLORS = ['#2f8f5b', '#9a6232'];
+  const TYPE_LIGHT = ['rgba(47,143,91,.25)', 'rgba(154,98,50,.25)'];
+  const $ = id => document.getElementById(id);
+
+  Chart.defaults.font.family = "'IBM Plex Sans Thai', system-ui, sans-serif";
+  Chart.defaults.color = '#4b5a50';
+
+  /* ---------- utils ---------- */
+  const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || '';
+  const WRITE_ACTIONS = ['saveRecords', 'deleteRecord'];
+  function getPin() { try { return localStorage.getItem('coconut_pin') || ''; } catch (e) { return ''; } }
+  function setPin(v) { try { localStorage.setItem('coconut_pin', v || ''); } catch (e) { } }
+
+  async function run(fn, ...args) {
+    if (!API_URL) throw new Error('ยังไม่ได้ตั้งค่า API_URL ในไฟล์ config.js');
+    const body = { action: fn, args };
+    if (WRITE_ACTIONS.includes(fn)) {
+      let pin = ($('f-pin') && $('f-pin').value) || getPin();
+      if (S.init && S.init.writeProtected && !pin) {
+        pin = prompt('กรุณาใส่รหัสผ่านสำหรับบันทึกข้อมูล') || '';
+      }
+      body.pin = pin;
+    }
+    // ใช้ text/plain เพื่อไม่ให้เบราว์เซอร์ส่ง preflight (Apps Script ไม่รองรับ OPTIONS)
+    const res = await fetch(API_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ (HTTP ' + res.status + ')');
+    let json;
+    try { json = await res.json(); }
+    catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON — ตรวจว่า Deploy เป็น Web app สิทธิ์ "ทุกคน" แล้ว'); }
+    if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาด');
+    if (body.pin) setPin(body.pin);
+    return json.data;
+  }
+  function busy(on) {
+    S.loading += on ? 1 : -1;
+    $('loading').classList.toggle('hidden', S.loading <= 0);
+  }
+  function toast(msg, err) {
+    const t = $('toast');
+    t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+    clearTimeout(t._h); t._h = setTimeout(() => t.className = '', 3500);
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function num(n, d) {
+    if (n == null || isNaN(n)) return '–';
+    return Number(n).toLocaleString('th-TH', { minimumFractionDigits: d || 0, maximumFractionDigits: d == null ? 2 : d });
+  }
+  function thDate(s, style) {
+    if (!s) return '';
+    const d = new Date(s + 'T00:00:00');
+    if (style === 'short') return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    if (style === 'mid') return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+    return d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function addDays(s, n) {
+    const p = s.split('-').map(Number);
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10);
+  }
+  function stats(rs) {
+    const qty = rs.reduce((a, r) => a + (r.qty || 0), 0);
+    const priced = rs.filter(r => r.price != null);
+    if (!priced.length) return { avg: null, min: null, max: null, qty, n: rs.length };
+    const prices = priced.map(r => r.price);
+    const weighted = priced.every(r => r.qty > 0);
+    const avg = weighted
+      ? priced.reduce((a, r) => a + r.price * r.qty, 0) / priced.reduce((a, r) => a + r.qty, 0)
+      : prices.reduce((a, b) => a + b, 0) / prices.length;
+    return { avg: Math.round(avg * 100) / 100, min: Math.min(...prices), max: Math.max(...prices), qty, n: rs.length };
+  }
+  function delta(cur, prev) {
+    if (cur == null || prev == null || prev === 0) return '';
+    const p = (cur - prev) / prev * 100;
+    if (Math.abs(p) < 0.05) return '<span>ทรงตัว</span>';
+    return `<span class="${p > 0 ? 'up' : 'down'}">${p > 0 ? '▲' : '▼'} ${num(Math.abs(p), 1)}%</span>`;
+  }
+  function typeIdx(name) { return S.init.types.findIndex(t => t.name === name); }
+  function makeChart(key, canvasId, config) {
+    if (S.charts[key]) S.charts[key].destroy();
+    S.charts[key] = new Chart($(canvasId), config);
+  }
+  function fillSelect(sel, items, keepFirst) {
+    const first = keepFirst ? sel.options[0].outerHTML : '';
+    sel.innerHTML = first + items.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  }
+  function kpi(title, value, sub, cls) {
+    return `<div class="kpi ${cls || ''}"><div class="kpi-t">${title}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub || ''}</div></div>`;
+  }
+
+  /* ---------- tabs ---------- */
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  function showTab(name) {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+    if (name === 'history' && !S.historyLoaded) loadHistory();
+    if (name === 'entry') loadExistingForForm();
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- init ---------- */
+  document.addEventListener('DOMContentLoaded', async () => {
+    busy(true);
+    try {
+      S.init = await run('getInitData');
+      if (S.init.writeProtected) { $('f-pin-wrap').classList.remove('hidden'); $('f-pin').value = getPin(); }
+      try { $('f-recorder').value = localStorage.getItem('coconut_recorder') || ''; } catch (e) { }
+      $('f-recorder').addEventListener('change', () => { try { localStorage.setItem('coconut_recorder', $('f-recorder').value); } catch (e) { } });
+      if (S.init.sheetUrl) { $('sheet-link').href = S.init.sheetUrl; $('sheet-link').classList.remove('hidden'); }
+      const names = S.init.districts, types = S.init.types.map(t => t.name);
+      fillSelect($('d-district'), names, true);
+      fillSelect($('h-district'), names, true);
+      fillSelect($('f-district'), names, false);
+      fillSelect($('d-type'), types, true);
+      fillSelect($('h-type'), types, true);
+      $('d-date').value = S.init.today;
+      $('f-date').value = S.init.today;
+      $('h-end').value = S.init.today;
+      $('h-start').value = addDays(S.init.today, -29);
+      buildForm();
+      bindEvents();
+      await loadDaily();
+    } catch (e) {
+      toast('เริ่มระบบไม่สำเร็จ: ' + (e.message || e), true);
+    } finally { busy(false); }
+  });
+
+  function bindEvents() {
+    $('d-date').addEventListener('change', loadDaily);
+    $('d-prev').addEventListener('click', () => { $('d-date').value = addDays($('d-date').value, -1); loadDaily(); });
+    $('d-next').addEventListener('click', () => { $('d-date').value = addDays($('d-date').value, 1); loadDaily(); });
+    $('d-today').addEventListener('click', () => { $('d-date').value = S.init.today; loadDaily(); });
+    $('d-reload').addEventListener('click', loadDaily);
+    $('d-district').addEventListener('change', renderDaily);
+    $('d-type').addEventListener('change', renderDaily);
+
+    $('h-load').addEventListener('click', loadHistory);
+    $('h-type').addEventListener('change', () => S.history && renderHistory());
+    $('h-district').addEventListener('change', loadHistory);
+    $('h-csv').addEventListener('click', exportCsv);
+    document.querySelectorAll('[data-range]').forEach(b => b.addEventListener('click', () => {
+      $('h-end').value = S.init.today;
+      $('h-start').value = addDays(S.init.today, -(Number(b.dataset.range) - 1));
+      loadHistory();
+    }));
+
+    $('f-form').addEventListener('submit', submitForm);
+    $('f-clear').addEventListener('click', () => clearForm(true));
+    $('f-date').addEventListener('change', loadExistingForForm);
+    $('f-district').addEventListener('change', loadExistingForForm);
+  }
+
+  /* ---------- รายวัน ---------- */
+  async function loadDaily() {
+    const date = $('d-date').value || S.init.today;
+    busy(true);
+    try {
+      S.daily = await run('getDailyDashboard', date);
+      renderDaily();
+    } catch (e) { toast('โหลดข้อมูลไม่สำเร็จ: ' + (e.message || e), true); }
+    finally { busy(false); }
+  }
+
+  function renderDaily() {
+    const D = S.daily; if (!D) return;
+    const dist = $('d-district').value, type = $('d-type').value;
+    const f = r => (!dist || r.district === dist) && (!type || r.type === type);
+    const recs = D.records.filter(f);
+    const prev = D.prevRecords.filter(f);
+
+    $('d-label').textContent = thDate(D.date) + (dist ? ' · อ.' + dist : ' · ทุกอำเภอ')
+      + (D.date > S.init.today ? ' (พยากรณ์อากาศ)' : '');
+
+    // KPI
+    let html = '';
+    S.init.types.forEach((t, i) => {
+      if (type && type !== t.name) return;
+      const s = stats(recs.filter(r => r.type === t.name));
+      const ps = stats(prev.filter(r => r.type === t.name));
+      const cls = i === 1 ? 'brown' : '';
+      html += kpi(`ราคาเฉลี่ย ${t.name}`,
+        s.avg == null ? '–' : `${num(s.avg, 2)} <small>${t.priceUnit}</small>`,
+        s.avg == null ? 'ยังไม่มีข้อมูลวันนี้'
+          : `ต่ำสุด ${num(s.min, 2)} · สูงสุด ${num(s.max, 2)}<br>${D.prevDate ? 'เทียบ ' + thDate(D.prevDate, 'short') + ' ' + delta(s.avg, ps.avg) : ''}`, cls);
+      html += kpi(`ผลผลิต ${t.name}`,
+        s.qty ? `${num(s.qty, 0)} <small>${t.qtyUnit}</small>` : '–',
+        `${s.n} รายการ${D.prevDate && ps.qty ? ' · ' + delta(s.qty, ps.qty) : ''}`, cls);
+    });
+    const wsel = D.weather.filter(w => !dist || w.district === dist);
+    if (wsel.length) {
+      const avg = k => { const v = wsel.map(w => w[k]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+      const rainy = wsel.filter(w => (w.rain || 0) >= 1).length;
+      const icon = dist ? wsel[0].icon : '🌡️';
+      html += kpi(dist ? `อากาศ อ.${esc(dist)}` : 'อากาศเฉลี่ยทั้งจังหวัด',
+        `${icon} ${num(avg('tmax'), 1)}° <small>/ ${num(avg('tmin'), 1)}°</small>`,
+        dist ? `${esc(wsel[0].desc)} · ฝน ${num(wsel[0].rain, 1)} มม.`
+          : `ฝนเฉลี่ย ${num(avg('rain'), 1)} มม. · ฝนตก ${rainy}/${wsel.length} อำเภอ`, 'sky');
+    }
+    $('d-kpis').innerHTML = html;
+
+    renderWeatherGrid(D, dist);
+    renderDistrictChart(D, type);
+    renderGradeChart(recs, type);
+    renderDailyTable(recs);
+  }
+
+  function renderWeatherGrid(D, dist) {
+    if (D.weatherError) $('d-wx-note').textContent = '⚠️ ' + D.weatherError;
+    else $('d-wx-note').textContent = 'ข้อมูลจาก Open-Meteo · คลิกการ์ดเพื่อกรองอำเภอ';
+    const map = {}; D.weather.forEach(w => map[w.district] = w);
+    $('d-wx').innerHTML = S.init.districts.map(n => {
+      const w = map[n];
+      return `<div class="wx ${dist === n ? 'sel' : ''}" data-d="${esc(n)}">
+        <div class="n">${esc(n)}</div>
+        ${w ? `<div class="i">${w.icon}</div>
+          <div class="t">${esc(w.desc)}</div>
+          <div class="t"><b>${num(w.tmax, 1)}°</b> / ${num(w.tmin, 1)}°C</div>
+          <div class="m">💧 ฝน ${num(w.rain, 1)} มม.${w.humidity != null ? ' · ชื้น ' + num(w.humidity, 0) + '%' : ''}</div>
+          <div class="m">💨 ลม ${num(w.wind, 0)} กม./ชม.</div>`
+        : '<div class="m" style="margin-top:8px">ไม่มีข้อมูลอากาศ</div>'}
+      </div>`;
+    }).join('');
+    document.querySelectorAll('#d-wx .wx').forEach(el => el.addEventListener('click', () => {
+      $('d-district').value = $('d-district').value === el.dataset.d ? '' : el.dataset.d;
+      renderDaily();
+    }));
+  }
+
+  function renderDistrictChart(D, type) {
+    const names = S.init.districts;
+    const datasets = S.init.types.filter(t => !type || t.name === type).map(t => {
+      const i = typeIdx(t.name);
+      return {
+        label: t.name, backgroundColor: TYPE_COLORS[i], borderRadius: 4,
+        data: names.map(n => stats(D.records.filter(r => r.district === n && r.type === t.name)).avg)
+      };
+    });
+    makeChart('district', 'c-district', {
+      type: 'bar', data: { labels: names, datasets },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${num(c.raw, 2)} บาท` } } },
+        scales: { x: { ticks: { maxRotation: 60, minRotation: 45, autoSkip: false, font: { size: 11 } } }, y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  function renderGradeChart(recs, type) {
+    const grades = S.init.grades;
+    const datasets = [];
+    S.init.types.filter(t => !type || t.name === type).forEach(t => {
+      const i = typeIdx(t.name);
+      const ss = grades.map(g => stats(recs.filter(r => r.type === t.name && r.grade === g.code)));
+      datasets.push({ type: 'bar', label: `ราคา ${t.name}`, backgroundColor: TYPE_COLORS[i], borderRadius: 4, yAxisID: 'y', data: ss.map(s => s.avg) });
+      datasets.push({ type: 'line', label: `ผลผลิต ${t.name}`, borderColor: TYPE_COLORS[i], backgroundColor: TYPE_LIGHT[i], borderDash: [5, 4], tension: .3, yAxisID: 'y1', data: ss.map(s => s.qty || null) });
+    });
+    makeChart('grade', 'c-grade', {
+      data: { labels: grades.map(g => g.label), datasets },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'บาท/ผล' } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'ผล' } }
+        }
+      }
+    });
+  }
+
+  function renderDailyTable(recs) {
+    $('d-count').textContent = recs.length + ' รายการ';
+    if (!recs.length) {
+      $('d-table').innerHTML = `<tr><td class="empty">ยังไม่มีข้อมูลของวันนี้ — ไปที่แท็บ "บันทึกข้อมูล" เพื่อเพิ่ม</td></tr>`;
+      return;
+    }
+    const order = S.init.districts;
+    const sorted = recs.slice().sort((a, b) =>
+      order.indexOf(a.district) - order.indexOf(b.district) || typeIdx(a.type) - typeIdx(b.type) || a.grade.localeCompare(b.grade));
+    $('d-table').innerHTML = `<thead><tr><th>อำเภอ</th><th>ประเภท</th><th>เกรด</th><th class="num">ราคา</th><th class="num">ผลผลิต</th><th>ผู้บันทึก</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>` +
+      sorted.map(r => `<tr>
+        <td>${esc(r.district)}</td>
+        <td><span class="badge t${Math.max(0, typeIdx(r.type))}">${esc(r.type)}</span></td>
+        <td><span class="g">${esc(r.grade)}</span></td>
+        <td class="num">${num(r.price, 2)} <span class="muted">${esc(r.priceUnit)}</span></td>
+        <td class="num">${num(r.qty, 0)} <span class="muted">${esc(r.qtyUnit)}</span></td>
+        <td>${esc(r.recorder)}</td><td>${esc(r.note)}</td>
+        <td><button class="btn small danger" data-del="${esc(r.id)}">ลบ</button></td></tr>`).join('') + '</tbody>';
+    document.querySelectorAll('#d-table [data-del]').forEach(b => b.addEventListener('click', () => removeRecord(b.dataset.del)));
+  }
+
+  async function removeRecord(id) {
+    if (!confirm('ต้องการลบรายการนี้ใช่ไหม?')) return;
+    busy(true);
+    try {
+      const ok = await run('deleteRecord', id);
+      toast(ok ? 'ลบรายการแล้ว' : 'ไม่พบรายการ', !ok);
+      S.historyLoaded = false;
+      await loadDaily();
+    } catch (e) { toast('ลบไม่สำเร็จ: ' + (e.message || e), true); }
+    finally { busy(false); }
+  }
+
+  /* ---------- ย้อนหลัง ---------- */
+  async function loadHistory() {
+    busy(true);
+    try {
+      S.history = await run('getHistory', $('h-start').value, $('h-end').value, $('h-district').value);
+      S.historyLoaded = true;
+      renderHistory();
+    } catch (e) { toast('โหลดข้อมูลย้อนหลังไม่สำเร็จ: ' + (e.message || e), true); }
+    finally { busy(false); }
+  }
+
+  function renderHistory() {
+    const H = S.history, type = $('h-type').value;
+    const types = S.init.types.filter(t => !type || t.name === type);
+    $('h-label').textContent = `${thDate(H.start, 'mid')} – ${thDate(H.end, 'mid')} · ${H.district ? 'อ.' + H.district : 'ทุกอำเภอ'} · ${H.total} รายการ`
+      + (H.weatherError ? ' · ⚠️ อากาศ: ' + H.weatherError : '');
+
+    // KPI
+    let html = '';
+    types.forEach(t => {
+      const i = typeIdx(t.name);
+      const ds = H.days.filter(d => d.byType[t.name].avg != null);
+      const totalQty = H.days.reduce((a, d) => a + (d.byType[t.name].qty || 0), 0);
+      const all = H.days.map(d => d.byType[t.name]).filter(s => s.avg != null);
+      const wsum = all.reduce((a, s) => a + s.avg * (s.qty || 1), 0), wq = all.reduce((a, s) => a + (s.qty || 1), 0);
+      const first = ds[0], last = ds[ds.length - 1];
+      const hi = ds.reduce((m, d) => !m || d.byType[t.name].avg > m.byType[t.name].avg ? d : m, null);
+      const lo = ds.reduce((m, d) => !m || d.byType[t.name].avg < m.byType[t.name].avg ? d : m, null);
+      html += kpi(`ราคาเฉลี่ยช่วงนี้ ${t.name}`,
+        ds.length ? `${num(wsum / wq, 2)} <small>${t.priceUnit}</small>` : '–',
+        ds.length ? `ต้นช่วง→ปลายช่วง ${delta(last.byType[t.name].avg, first.byType[t.name].avg) || '–'}<br>สูงสุด ${num(hi.byType[t.name].avg, 2)} (${thDate(hi.date, 'short')}) · ต่ำสุด ${num(lo.byType[t.name].avg, 2)} (${thDate(lo.date, 'short')})` : 'ไม่มีข้อมูล',
+        i === 1 ? 'brown' : '');
+      html += kpi(`ผลผลิตรวม ${t.name}`, totalQty ? `${num(totalQty, 0)} <small>${t.qtyUnit}</small>` : '–',
+        `${ds.length} วันที่มีข้อมูล`, i === 1 ? 'brown' : '');
+    });
+    const wd = H.days.filter(d => d.weather);
+    if (wd.length) {
+      const rain = wd.reduce((a, d) => a + (d.weather.rain || 0), 0);
+      const rainy = wd.filter(d => (d.weather.rain || 0) >= 1).length;
+      const tmax = wd.reduce((a, d) => a + (d.weather.tmax || 0), 0) / wd.length;
+      html += kpi('สภาพอากาศช่วงนี้', `🌧️ ${num(rain, 1)} <small>มม.</small>`,
+        `ฝนตก ${rainy}/${wd.length} วัน · อุณหภูมิสูงสุดเฉลี่ย ${num(tmax, 1)}°C${H.district ? '' : '<br>(ค่าเฉลี่ยทุกอำเภอ)'}`, 'sky');
+    }
+    $('h-kpis').innerHTML = html;
+
+    const labels = H.days.map(d => thDate(d.date, 'short'));
+    makeChart('trend', 'c-trend', {
+      type: 'line',
+      data: {
+        labels, datasets: types.map(t => {
+          const i = typeIdx(t.name);
+          return { label: t.name, data: H.days.map(d => d.byType[t.name].avg), borderColor: TYPE_COLORS[i], backgroundColor: TYPE_LIGHT[i], tension: .3, spanGaps: true, pointRadius: H.days.length > 60 ? 0 : 3, fill: false };
+        })
+      },
+      options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: 'บาท/ผล' } } } }
+    });
+
+    makeChart('qty', 'c-qty', {
+      type: 'bar',
+      data: {
+        labels, datasets: types.map(t => {
+          const i = typeIdx(t.name);
+          return { label: t.name, data: H.days.map(d => d.byType[t.name].qty || null), backgroundColor: TYPE_COLORS[i], stack: 'q' };
+        })
+      },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+    });
+
+    makeChart('wx', 'c-wx', {
+      data: {
+        labels, datasets: [
+          { type: 'bar', label: 'ฝน (มม.)', data: H.days.map(d => d.weather ? d.weather.rain : null), backgroundColor: 'rgba(59,130,196,.55)', yAxisID: 'y1' },
+          { type: 'line', label: 'สูงสุด (°C)', data: H.days.map(d => d.weather ? d.weather.tmax : null), borderColor: '#e07a2f', tension: .3, pointRadius: 0, yAxisID: 'y' },
+          { type: 'line', label: 'ต่ำสุด (°C)', data: H.days.map(d => d.weather ? d.weather.tmin : null), borderColor: '#7aa6d6', tension: .3, pointRadius: 0, yAxisID: 'y' }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } },
+        scales: { y: { title: { display: true, text: '°C' } }, y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'มม.' } } }
+      }
+    });
+
+    // ตารางรายอำเภอ
+    $('h-dist').innerHTML = `<thead><tr><th>อำเภอ</th>${types.map(t => `<th class="num">ราคา ${esc(t.name)}</th><th class="num">ผลผลิต</th>`).join('')}</tr></thead><tbody>` +
+      H.districtSummary.map(r => `<tr class="click" data-d="${esc(r.district)}"><td>${H.district === r.district ? '<b>' + esc(r.district) + '</b>' : esc(r.district)}</td>${types.map(t => {
+        const s = r.byType[t.name]; return `<td class="num">${num(s.avg, 2)}</td><td class="num">${num(s.qty || null, 0)}</td>`;
+      }).join('')}</tr>`).join('') + '</tbody>';
+    document.querySelectorAll('#h-dist tr[data-d]').forEach(tr => tr.addEventListener('click', () => { $('h-district').value = tr.dataset.d; loadHistory(); }));
+
+    // ตารางรายเกรด
+    const gl = {}; S.init.grades.forEach(g => gl[g.code] = g.label);
+    $('h-grade').innerHTML = `<thead><tr><th>ประเภท</th><th>เกรด</th><th class="num">ราคาเฉลี่ย</th><th class="num">ต่ำสุด</th><th class="num">สูงสุด</th><th class="num">ผลผลิตรวม</th></tr></thead><tbody>` +
+      H.gradeSummary.filter(g => !type || g.type === type).map(g => `<tr>
+        <td><span class="badge t${typeIdx(g.type)}">${esc(g.type)}</span></td><td>${esc(gl[g.grade] || g.grade)}</td>
+        <td class="num">${num(g.avg, 2)}</td><td class="num">${num(g.min, 2)}</td><td class="num">${num(g.max, 2)}</td><td class="num">${num(g.qty || null, 0)}</td></tr>`).join('') + '</tbody>';
+
+    // ตารางรายวัน
+    $('h-table').innerHTML = `<thead><tr><th>วันที่</th><th>อากาศ</th><th class="num">สูง/ต่ำ °C</th><th class="num">ฝน มม.</th>${types.map(t => `<th class="num">ราคา ${esc(t.name)}</th><th class="num">ผลผลิต</th>`).join('')}</tr></thead><tbody>` +
+      H.days.slice().reverse().map(d => `<tr class="click" data-date="${d.date}">
+        <td>${thDate(d.date, 'mid')}</td>
+        <td>${d.weather ? d.weather.icon + ' ' + esc(d.weather.desc) : '–'}</td>
+        <td class="num">${d.weather ? num(d.weather.tmax, 1) + ' / ' + num(d.weather.tmin, 1) : '–'}</td>
+        <td class="num">${d.weather ? num(d.weather.rain, 1) : '–'}</td>
+        ${types.map(t => { const s = d.byType[t.name]; return `<td class="num">${num(s.avg, 2)}</td><td class="num">${num(s.qty || null, 0)}</td>`; }).join('')}
+      </tr>`).join('') + '</tbody>';
+    document.querySelectorAll('#h-table tr[data-date]').forEach(tr => tr.addEventListener('click', () => {
+      $('d-date').value = tr.dataset.date;
+      $('d-district').value = H.district || '';
+      showTab('daily'); loadDaily();
+    }));
+  }
+
+  function exportCsv() {
+    const H = S.history; if (!H) return toast('กรุณาโหลดข้อมูลก่อน', true);
+    const types = S.init.types;
+    const head = ['วันที่', 'อำเภอ', 'สภาพอากาศ', 'อุณหภูมิสูงสุด', 'อุณหภูมิต่ำสุด', 'ฝน(มม.)'];
+    types.forEach(t => head.push(`ราคาเฉลี่ย ${t.name} (${t.priceUnit})`, `ผลผลิต ${t.name} (${t.qtyUnit})`));
+    const rows = [head].concat(H.days.map(d => {
+      const r = [d.date, H.district || 'ทุกอำเภอ', d.weather ? d.weather.desc : '', d.weather ? d.weather.tmax : '', d.weather ? d.weather.tmin : '', d.weather ? d.weather.rain : ''];
+      types.forEach(t => r.push(d.byType[t.name].avg ?? '', d.byType[t.name].qty || ''));
+      return r;
+    }));
+    const csv = '\ufeff' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `coconut_songkhla_${H.start}_${H.end}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  /* ---------- ฟอร์มบันทึก ---------- */
+  function buildForm() {
+    $('f-types').innerHTML = S.init.types.map((t, i) => `
+      <div class="type-block">
+        <h3><span class="badge t${i}">${esc(t.name)}</span></h3>
+        <table>
+          <tr><th>เกรด</th><th>ราคา (${esc(t.priceUnit)})</th><th>ผลผลิต (${esc(t.qtyUnit)})</th></tr>
+          ${S.init.grades.map(g => `<tr>
+            <td>${esc(g.label)}</td>
+            <td><input type="number" step="0.01" min="0" inputmode="decimal" data-type="${esc(t.name)}" data-grade="${g.code}" data-f="price"></td>
+            <td><input type="number" step="1" min="0" inputmode="numeric" data-type="${esc(t.name)}" data-grade="${g.code}" data-f="qty"></td>
+          </tr>`).join('')}
+        </table>
+      </div>`).join('');
+  }
+
+  function clearForm(all) {
+    document.querySelectorAll('#f-types input').forEach(i => i.value = '');
+    if (all) $('f-note').value = '';
+  }
+
+  async function loadExistingForForm() {
+    const date = $('f-date').value, district = $('f-district').value;
+    if (!date || !district) return;
+    try {
+      const recs = await run('getRecords', date, district);
+      clearForm(false);
+      recs.forEach(r => {
+        const p = document.querySelector(`#f-types input[data-type="${CSS.escape(r.type)}"][data-grade="${CSS.escape(r.grade)}"][data-f="price"]`);
+        const q = document.querySelector(`#f-types input[data-type="${CSS.escape(r.type)}"][data-grade="${CSS.escape(r.grade)}"][data-f="qty"]`);
+        if (p) p.value = r.price ?? '';
+        if (q) q.value = r.qty ?? '';
+      });
+      $('f-hint').innerHTML = recs.length
+        ? `📝 มีข้อมูลเดิม ${recs.length} รายการของ อ.${esc(district)} วันที่ ${thDate(date, 'mid')} — แก้ตัวเลขแล้วกดบันทึกเพื่อแทนที่`
+        : 'เว้นว่างเกรดที่ไม่มีข้อมูลได้ ระบบจะบันทึกเฉพาะแถวที่กรอก';
+    } catch (e) { /* ไม่ต้องแจ้ง */ }
+  }
+
+  async function submitForm(ev) {
+    ev.preventDefault();
+    const items = [];
+    S.init.types.forEach(t => S.init.grades.forEach(g => {
+      const get = f => document.querySelector(`#f-types input[data-type="${CSS.escape(t.name)}"][data-grade="${g.code}"][data-f="${f}"]`).value;
+      const price = get('price'), qty = get('qty');
+      if (price !== '' || qty !== '') items.push({ type: t.name, grade: g.code, price, qty });
+    }));
+    if (!items.length) return toast('กรุณากรอกราคาอย่างน้อย 1 เกรด', true);
+    const payload = {
+      date: $('f-date').value, district: $('f-district').value,
+      recorder: $('f-recorder').value, note: $('f-note').value,
+      replace: $('f-replace').checked, items
+    };
+    busy(true);
+    try {
+      const res = await run('saveRecords', payload);
+      toast(`บันทึกแล้ว ${res.saved} รายการ${res.replaced ? ' (แทนที่ ' + res.replaced + ')' : ''}`);
+      S.historyLoaded = false;
+      await loadExistingForForm();
+      if ($('d-date').value === payload.date) loadDaily();
+    } catch (e) { toast('บันทึกไม่สำเร็จ: ' + (e.message || e), true); }
+    finally { busy(false); }
+  }
+</script>
+</body>
+</html>
